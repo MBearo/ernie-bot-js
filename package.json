@@ -1,5 +1,5 @@
 {
-  "name": "ernie-bot",
+  "name": "ernie-bot-js",
   "version": "0.0.1",
   "description": "JS library for the OpenAI API",
   "main": "dist/index.js",
