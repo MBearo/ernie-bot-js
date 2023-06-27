@@ -38,6 +38,19 @@ export interface CreateChatCompletionRequest extends RequestBase {
 export interface CreateCompletionRequest extends RequestBase {
     prompt: string;
 }
+export type CompletionResponse = {
+    id: string;
+    object: string;
+    created: number;
+    result: string;
+    is_truncated: boolean;
+    need_clear_history: boolean;
+    usage: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+    };
+  };
 export class ERNIEBotApi {
     accessToken = ''
     apiKey = ''
@@ -52,15 +65,15 @@ export class ERNIEBotApi {
         this.accessToken = accessToken ?? '';
         this.apiKey = apiKey ?? '';
         this.secretKey = secretKey ?? '';
-
     }
-    public async createChatCompletion(createChatCompletionRequest: CreateChatCompletionRequest, options?: AxiosRequestConfig): Promise<AxiosResponse<any, any>> {
+    
+    public async createChatCompletion(createChatCompletionRequest: CreateChatCompletionRequest, options?: AxiosRequestConfig): Promise<AxiosResponse<CompletionResponse>> {
         const url = this.completioneUrl(createChatCompletionRequest.model)
         const data = this.completionData(createChatCompletionRequest)
         const response = await this.request(url, data, options)
         return response
     }
-    public async createCompletion(createCompletionRequest: CreateCompletionRequest, options?: AxiosRequestConfig): Promise<AxiosResponse<any, any>> {
+    public async createCompletion(createCompletionRequest: CreateCompletionRequest, options?: AxiosRequestConfig): Promise<AxiosResponse<CompletionResponse>> {
         const url = this.completioneUrl(createCompletionRequest.model)
         const data = this.completionData(createCompletionRequest)
         const response = await this.request(url, data, options)
