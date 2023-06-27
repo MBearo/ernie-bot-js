@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution":"NodeNext",
+    "allowSyntheticDefaultImports":true,
+    "noImplicitAny": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "typeRoots": [
+      "node_modules/@types"
+    ]
+  },
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
+}
