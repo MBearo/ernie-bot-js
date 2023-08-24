@@ -11,10 +11,12 @@ export interface Configuration {
 export enum Model {
     ERNIE_Bot = 'ERNIE_Bot',
     ERNIE_Bot_Turbo = 'ERNIE_Bot_Turbo',
+    EMBEDDING_V1 = 'EMBEDDING_V1'
 }
 const QequestUrlMap = {
     [Model.ERNIE_Bot]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
-    [Model.ERNIE_Bot_Turbo]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant'
+    [Model.ERNIE_Bot_Turbo]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant',
+    [Model.EMBEDDING_V1]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/embedding-v1'
 }
 export interface RequestBase {
     temperature?: number;
@@ -46,11 +48,17 @@ export type CompletionResponse = {
     is_truncated: boolean;
     need_clear_history: boolean;
     usage: {
-      prompt_tokens: number;
-      completion_tokens: number;
-      total_tokens: number;
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
     };
-  };
+};
+export type CreateEmbeddingRequest = {
+    input: string[];
+}
+// export type CompletionStreamResponse = {
+
+// }
 export class ERNIEBotApi {
     accessToken = ''
     apiKey = ''
@@ -66,21 +74,46 @@ export class ERNIEBotApi {
         this.apiKey = apiKey ?? '';
         this.secretKey = secretKey ?? '';
     }
-    
+
     public async createChatCompletion(createChatCompletionRequest: CreateChatCompletionRequest, options?: AxiosRequestConfig): Promise<AxiosResponse<CompletionResponse>> {
-        const url = this.completioneUrl(createChatCompletionRequest.model)
+        const url = this.requestUrl(createChatCompletionRequest.model)
         const data = this.completionData(createChatCompletionRequest)
         const response = await this.request(url, data, options)
         return response
     }
     public async createCompletion(createCompletionRequest: CreateCompletionRequest, options?: AxiosRequestConfig): Promise<AxiosResponse<CompletionResponse>> {
-        const url = this.completioneUrl(createCompletionRequest.model)
+        const url = this.requestUrl(createCompletionRequest.model)
         const data = this.completionData(createCompletionRequest)
         const response = await this.request(url, data, options)
         return response
     }
-    public async createEmbedding() {
-        // TODO
+    // TODO
+    // public async createCompletionStream(createCompletionRequest: CreateCompletionRequest, options?: AxiosRequestConfig) {
+    //     const url = this.completioneUrl(createCompletionRequest.model)
+    //     const data = this.completionData(createCompletionRequest)
+    //     const response = await this.request(url, data, options)
+    //     return {
+    //         [Symbol.asyncIterator]() {
+    //             return {
+    //                 next() {
+    //                     return new Promise<{ value: CompletionResponse, done: boolean }>(resolve => {
+    //                         response.data.on('data', (data: string) => {
+    //                             const item = JSON.parse(data.toString().replace(/^data: /, ''))
+    //                             resolve({ value: item, done: true })
+    //                         })
+    //                         response.data.on('end', () => {
+    //                             resolve({ value: undefined, done: false })
+    //                         })
+    //                     })
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+    public async createEmbedding(createEmbeddingRequest: CreateEmbeddingRequest, options?: AxiosRequestConfig) {
+        const url = this.requestUrl(Model.EMBEDDING_V1)
+        const response = await this.request(url, createEmbeddingRequest, options)
+        return response
     }
     private async getAccessToken(): Promise<string> {
         if (this.isUseAPIKey) {
@@ -107,7 +140,7 @@ export class ERNIEBotApi {
     private get isUseAPIKey() {
         return this.apiKey && this.secretKey
     }
-    private completioneUrl(modelType: Model = Model.ERNIE_Bot) {
+    private requestUrl(modelType: Model = Model.ERNIE_Bot) {
         return QequestUrlMap[modelType]
     }
     private getDefaultParams(requestBase: RequestBase) {
