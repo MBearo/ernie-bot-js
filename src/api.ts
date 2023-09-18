@@ -1,4 +1,5 @@
 import axios, { AxiosResponse, AxiosRequestConfig } from 'axios'
+import { streamJSON } from './utils.js';
 const OAUTH_URL = 'https://aip.baidubce.com/oauth/2.0/token'
 
 
@@ -87,29 +88,73 @@ export class ERNIEBotApi {
         const response = await this.request(url, data, options)
         return response
     }
-    // TODO
-    // public async createCompletionStream(createCompletionRequest: CreateCompletionRequest, options?: AxiosRequestConfig) {
-    //     const url = this.completioneUrl(createCompletionRequest.model)
-    //     const data = this.completionData(createCompletionRequest)
-    //     const response = await this.request(url, data, options)
-    //     return {
-    //         [Symbol.asyncIterator]() {
-    //             return {
-    //                 next() {
-    //                     return new Promise<{ value: CompletionResponse, done: boolean }>(resolve => {
-    //                         response.data.on('data', (data: string) => {
-    //                             const item = JSON.parse(data.toString().replace(/^data: /, ''))
-    //                             resolve({ value: item, done: true })
-    //                         })
-    //                         response.data.on('end', () => {
-    //                             resolve({ value: undefined, done: false })
-    //                         })
-    //                     })
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    // TODO 多字节字符被切割
+    public async createChatCompletionStream(createCompletionRequest: CreateCompletionRequest, options?: AxiosRequestConfig) {
+        const url = this.requestUrl(createCompletionRequest.model)
+        const data = this.completionData({ ...createCompletionRequest, stream: true })
+        const response = await this.request(url, data, { ...options, responseType: 'stream' })
+
+        let deferredResolve = Promise.resolve
+        let lastString = ''
+        response.data.on('data', async (data: string) => {
+            const string = data.toString()
+            lastString += string
+            let removeString: string[] = []
+            for await (const msg of streamJSON(lastString, removeString)) {
+                deferredResolve({ value: msg, done: false })
+            }
+            lastString = lastString.slice(removeString.join('').length)
+        })
+        response.data.on('end', async () => {
+            for await (const msg of streamJSON(lastString, [])) {
+                deferredResolve({ value: msg, done: false })
+            }
+            deferredResolve({ value: {} as CompletionResponse, done: true })
+        })
+        response.data = {
+            [Symbol.asyncIterator]() {
+                return {
+                    next() {
+                        return new Promise<{ value: CompletionResponse, done: boolean }>(resolve => {
+                            deferredResolve = resolve as any
+                        })
+                    }
+                }
+            }
+        }
+        return response
+    }
+    public async createCompletionStream(createCompletionRequest: CreateCompletionRequest, options?: AxiosRequestConfig) {
+        const url = this.requestUrl(createCompletionRequest.model)
+        const data = this.completionData({ ...createCompletionRequest, stream: true })
+        const response = await this.request(url, data, { ...options, responseType: 'stream' })
+        let deferredResolve = Promise.resolve
+
+        response.data.on('data', (data: string) => {
+            const string = data.toString().replace(/^data: /, '')
+            if (string.includes('"is_end":true')) {
+                deferredResolve({ value: {}, done: true })
+            } else {
+                const item = JSON.parse(string)
+                deferredResolve({ value: item, done: false })
+            }
+        })
+        response.data.on('end', () => {
+            deferredResolve({ value: {} as CompletionResponse, done: true })
+        })
+        response.data = {
+            [Symbol.asyncIterator]() {
+                return {
+                    next() {
+                        return new Promise<{ value: CompletionResponse, done: boolean }>(resolve => {
+                            deferredResolve = resolve as any
+                        })
+                    }
+                }
+            }
+        }
+        return response
+    }
     public async createEmbedding(createEmbeddingRequest: CreateEmbeddingRequest, options?: AxiosRequestConfig) {
         const url = this.requestUrl(Model.EMBEDDING_V1)
         const response = await this.request(url, createEmbeddingRequest, options)
