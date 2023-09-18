@@ -20,7 +20,6 @@ const res = await ernie.createChatCompletion({
         role: 'user',
         content: "写一首关于太阳的诗歌",
     }],
-    model: Model.ERNIE_Bot_Turbo,
 })
 console.log(res.data)
 ```
