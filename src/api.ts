@@ -1,5 +1,5 @@
 import axios, { AxiosResponse, AxiosRequestConfig } from 'axios'
-import { streamJSON } from './utils.js';
+import { checkEnvironment, formateResponseStreamData, streamJSON } from './utils.js';
 const OAUTH_URL = 'https://aip.baidubce.com/oauth/2.0/token'
 
 
@@ -89,40 +89,12 @@ export class ERNIEBotApi {
         return response
     }
     // TODO 多字节字符被切割
-    public async createChatCompletionStream(createCompletionRequest: CreateCompletionRequest, options?: AxiosRequestConfig) {
+    public async createChatCompletionStream(createCompletionRequest: CreateChatCompletionRequest, options?: AxiosRequestConfig) {
+        const isBrowser = checkEnvironment()
         const url = this.requestUrl(createCompletionRequest.model)
         const data = this.completionData({ ...createCompletionRequest, stream: true })
-        const response = await this.request(url, data, { ...options, responseType: 'stream' })
-
-        let deferredResolve = Promise.resolve
-        let lastString = ''
-        response.data.on('data', async (data: string) => {
-            const string = data.toString()
-            lastString += string
-            let removeString: string[] = []
-            for await (const msg of streamJSON(lastString, removeString)) {
-                deferredResolve({ value: msg, done: false })
-            }
-            lastString = lastString.slice(removeString.join('').length)
-        })
-        response.data.on('end', async () => {
-            for await (const msg of streamJSON(lastString, [])) {
-                deferredResolve({ value: msg, done: false })
-            }
-            deferredResolve({ value: {} as CompletionResponse, done: true })
-        })
-        response.data = {
-            [Symbol.asyncIterator]() {
-                return {
-                    next() {
-                        return new Promise<{ value: CompletionResponse, done: boolean }>(resolve => {
-                            deferredResolve = resolve as any
-                        })
-                    }
-                }
-            }
-        }
-        return response
+        const request = isBrowser ? this.fetchStreamRequest : this.nodeStreamRequest
+        return await request.call(this, url, data, { ...options, responseType: 'stream' })
     }
     public async createCompletionStream(createCompletionRequest: CreateCompletionRequest, options?: AxiosRequestConfig) {
         const url = this.requestUrl(createCompletionRequest.model)
@@ -159,6 +131,40 @@ export class ERNIEBotApi {
         const url = this.requestUrl(Model.EMBEDDING_V1)
         const response = await this.request(url, createEmbeddingRequest, options)
         return response
+    }
+    // TODO 重构
+    private async nodeStreamRequest(url: string, data: any, options: AxiosRequestConfig) {
+        const response = await this.request(url, data, options)
+        formateResponseStreamData(response)
+        return response
+    }
+    private async *fetchStreamRequest(url: string, data: any, options: AxiosRequestConfig) {
+        const response = await fetch(
+            url + `?access_token=${await this.getAccessToken()}`,
+            {
+                method: 'POST',
+                body: JSON.stringify({ ...data, stream: true }),
+            }
+        )
+        const reader = response.body.getReader();
+        let lastString = ''
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+                break;
+            }
+
+            const decoder = new TextDecoder();
+            const chunkStr = decoder.decode(value);
+            // console.log('chunkStr',chunkStr)
+            lastString += chunkStr
+            let removeString: string[] = []
+            for await (const chunk of streamJSON(lastString, removeString)) {
+                yield chunk
+            }
+            lastString = lastString.slice(removeString.join('').length)
+        }
     }
     private async getAccessToken(): Promise<string> {
         if (this.isUseAPIKey) {
