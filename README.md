@@ -26,5 +26,6 @@ console.log(res.data)
 
 ## 版本
 
+* 0.3.0 cjs 版本
 * 0.2.0 支持 createChatCompletionStream(beta), createCompletionStream(beta)
 * 0.1.0 支持 ERNIE_BOT, ERNIE_Bot_Turbo, Embedding_v1。支持 createChatCompletion, createCompletion
