@@ -12,12 +12,14 @@ export interface Configuration {
 export enum Model {
     ERNIE_Bot = 'ERNIE_Bot',
     ERNIE_Bot_Turbo = 'ERNIE_Bot_Turbo',
+    ERNIE_Bot_4= 'ERNIE_Bot_4',
     EMBEDDING_V1 = 'EMBEDDING_V1'
 }
-const QequestUrlMap = {
+const QuestUrlMap = {
     [Model.ERNIE_Bot]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
     [Model.ERNIE_Bot_Turbo]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant',
-    [Model.EMBEDDING_V1]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/embedding-v1'
+    [Model.EMBEDDING_V1]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/embedding-v1',
+    [Model.ERNIE_Bot_4]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro'
 }
 export interface RequestBase {
     temperature?: number;
@@ -192,7 +194,7 @@ export class ERNIEBotApi {
         return this.apiKey && this.secretKey
     }
     private requestUrl(modelType: Model = Model.ERNIE_Bot) {
-        return QequestUrlMap[modelType]
+        return QuestUrlMap[modelType]
     }
     private getDefaultParams(requestBase: RequestBase) {
         const { temperature = 0.95, topP = 0.8, penaltyScore = 1.0, stream = false, userId = '' } = requestBase
