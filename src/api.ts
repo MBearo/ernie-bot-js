@@ -12,7 +12,7 @@ export interface Configuration {
 export enum Model {
     ERNIE_Bot = 'ERNIE_Bot',
     ERNIE_Bot_Turbo = 'ERNIE_Bot_Turbo',
-    ERNIE_Bot_4= 'ERNIE_Bot_4',
+    ERNIE_Bot_4 = 'ERNIE_Bot_4',
     EMBEDDING_V1 = 'EMBEDDING_V1'
 }
 const QuestUrlMap = {
@@ -180,7 +180,7 @@ export class ERNIEBotApi {
                 }
             })
             // TODO 过期重试
-            if (data.error_code !== 0) {
+            if (!data.access_token && data.error_code !== 0) {
                 throw new Error(data.error_msg)
             }
             this.accessToken = data.access_token
