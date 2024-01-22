@@ -26,6 +26,7 @@ console.log(res.data)
 
 ## 版本
 
+* 0.5.0 function_call 支持
 * 0.4.0 EB4 支持
 * 0.3.0 cjs 版本
 * 0.2.0 支持 createChatCompletionStream(beta), createCompletionStream(beta)

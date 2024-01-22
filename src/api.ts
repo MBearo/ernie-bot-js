@@ -31,14 +31,37 @@ export interface RequestBase {
 }
 export enum Role {
     USER = 'user',
-    ASSISTANT = 'assistant'
+    ASSISTANT = 'assistant',
+    FUNCTION = 'function'
+}
+
+export interface FunctionCall {
+    name: string;
+    arguments: string;
+    thoughts: string;
+}
+
+export interface Example {
+    role: Role,
+    content: string;
+    name?: string;
+    function_call?: FunctionCall;
 }
 export interface ChatCompletionRequestMessage {
     role: Role;
     content: string;
+    function_call?: FunctionCall;
+}
+export interface ChatCompletionRequestFunction {
+    name: string;
+    description: string;
+    parameters: Record<string, any>;
+    responses?: Record<string, any>;
+    examples?: Example[][];
 }
 export interface CreateChatCompletionRequest extends RequestBase {
     messages: ChatCompletionRequestMessage[];
+    functions?: ChatCompletionRequestFunction[];
 }
 export interface CreateCompletionRequest extends RequestBase {
     prompt: string;
@@ -208,15 +231,28 @@ export class ERNIEBotApi {
     }
     private completionData(completionRequest: CreateCompletionRequest | CreateChatCompletionRequest) {
         let messages
-        if ('messages' in completionRequest) {
-            messages = completionRequest.messages
-        } else {
+        if ('prompt' in completionRequest) {
             messages = [{ role: Role.USER, content: completionRequest.prompt }]
+        } else {
+            messages = completionRequest.messages
         }
-        return {
+        const data: {
+            temperature: number;
+            topP: number;
+            penaltyScore: number;
+            stream: boolean;
+            userId: string;
+            messages: ChatCompletionRequestMessage[];
+            functions?: ChatCompletionRequestFunction[];
+        } = {
             messages,
             ...this.getDefaultParams(completionRequest)
         };
+        if ("functions" in completionRequest && completionRequest.functions) {
+            data['functions'] = completionRequest.functions
+        }
+        console.log('data', data)
+        return data
     }
     private async request(url: string, data: any, options: AxiosRequestConfig) {
         return await axios({
