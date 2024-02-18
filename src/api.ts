@@ -19,6 +19,7 @@ const QuestUrlMap = {
     [Model.ERNIE_Bot]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
     [Model.ERNIE_Bot_Turbo]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant',
     [Model.EMBEDDING_V1]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/embeddings/embedding-v1',
+    [Model.ERNIE_Bot_4]: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro'
 }
 export interface RequestBase {
     temperature?: number;
@@ -181,7 +182,6 @@ export class ERNIEBotApi {
 
             const decoder = new TextDecoder();
             const chunkStr = decoder.decode(value);
-            // console.log('chunkStr',chunkStr)
             lastString += chunkStr
             let removeString: string[] = []
             for await (const chunk of streamJSON(lastString, removeString)) {
@@ -250,7 +250,6 @@ export class ERNIEBotApi {
         if ("functions" in completionRequest && completionRequest.functions) {
             data['functions'] = completionRequest.functions
         }
-        console.log('data', data)
         return data
     }
     private async request(url: string, data: any, options: AxiosRequestConfig) {
